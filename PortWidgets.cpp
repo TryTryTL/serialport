@@ -4,6 +4,13 @@
 #include <QString>
 #include <QStringList>
 #include <qDebug>
+
+#ifdef Q_OS_ANDROID
+#include <QAndroidJniEnvironment>
+#include <QAndroidJniObject>
+#include <QtAndroid>
+#endif
+
 PortWidgets::PortWidgets(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::PortWidgets)
@@ -50,7 +57,27 @@ PortWidgets::~PortWidgets()
 
 void PortWidgets::on_ptn_refresh_clicked()
 {
-    QStringList portNameList;
+    QAndroidJniObject javaUsbController = QAndroidJniObject("org/qtproject/example/UsbController",
+                                                            "(Landroid/content/Context;)V",
+                                                            QtAndroid::androidContext().object());
+
+    QAndroidJniObject result = javaUsbController.callObjectMethod("getDeviceList", "()[Ljava/lang/String;");
+    QAndroidJniEnvironment env;
+    jobjectArray arr = result.object<jobjectArray>();
+    int count = env->GetArrayLength(arr);
+    QStringList deviceList;
+    for (int i = 0; i < count; i++) {
+        QAndroidJniObject deviceName = env->GetObjectArrayElement(arr, i);
+        deviceList << deviceName.toString();
+        qDebug() << "Device found: " << deviceName.toString();
+    }
+    // 将端口名列表添加到下拉框中
+    ui->CmPortlist->addItems(deviceList);
+    // 默认情况下选择第一个端口
+    if (!deviceList.isEmpty()) {
+        ui->CmPortlist->setCurrentIndex(0);
+    }
+/*    QStringList portNameList;
     QList<QSerialPortInfo> serialPortInfos = QSerialPortInfo::availablePorts();
     ui->CmPortlist->clear();
     // 遍历所有可用的串行端口信息
@@ -63,6 +90,7 @@ void PortWidgets::on_ptn_refresh_clicked()
     if (!portNameList.isEmpty()) {
         ui->CmPortlist->setCurrentIndex(0);
     }
+*/
 }
 
 //串口连接
