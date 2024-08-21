@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QSerialPort>
 #include <unordered_map>
+#include <QAndroidJniObject>
 
 namespace Ui {
 class PortWidgets;
@@ -30,7 +31,7 @@ public:
 private:
     Ui::PortWidgets *ui;
     QSerialPort *myPort;//串口指针
-
+    QAndroidJniObject javaUsbController;
     std::unordered_map<int, QSerialPort::BaudRate> baudRateMap =//波特率
         {
             { 0, QSerialPort::Baud1200 },{ 1, QSerialPort::Baud2400 },{ 2, QSerialPort::Baud4800 },

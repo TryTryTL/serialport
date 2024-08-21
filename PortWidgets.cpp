@@ -4,6 +4,7 @@
 #include <QString>
 #include <QStringList>
 #include <qDebug>
+#include <QDebug>  // 使用正确的大小写
 
 #ifdef Q_OS_ANDROID
 #include <QAndroidJniEnvironment>
@@ -55,91 +56,70 @@ PortWidgets::~PortWidgets()
     delete ui;
 }
 
-void PortWidgets::on_ptn_refresh_clicked()
-{
+void PortWidgets::on_ptn_refresh_clicked() {
     QAndroidJniObject javaUsbController = QAndroidJniObject("org/qtproject/example/UsbController",
                                                             "(Landroid/content/Context;)V",
                                                             QtAndroid::androidContext().object());
 
-    QAndroidJniObject result = javaUsbController.callObjectMethod("getDeviceList", "()[Ljava/lang/String;");
+    QAndroidJniObject result = javaUsbController.callObjectMethod("getAllSerialPort", "()Ljava/util/List;");
     QAndroidJniEnvironment env;
-    jobjectArray arr = result.object<jobjectArray>();
-    int count = env->GetArrayLength(arr);
+    jobject listObject = result.object<jobject>();
+
+    jclass listClass = env->FindClass("java/util/List");
+    jmethodID sizeMethod = env->GetMethodID(listClass, "size", "()I");
+    jmethodID getMethod = env->GetMethodID(listClass, "get", "(I)Ljava/lang/Object;");
+
+    int size = env->CallIntMethod(listObject, sizeMethod);
     QStringList deviceList;
-    for (int i = 0; i < count; i++) {
-        QAndroidJniObject deviceName = env->GetObjectArrayElement(arr, i);
-        deviceList << deviceName.toString();
-        qDebug() << "Device found: " << deviceName.toString();
+    for (int i = 0; i < size; i++) {
+        jobject serialPortObject = env->CallObjectMethod(listObject, getMethod, i);
+        QAndroidJniObject usbDevice = QAndroidJniObject::fromLocalRef(serialPortObject).callObjectMethod("getDevice", "()Landroid/hardware/usb/UsbDevice;");
+        QString deviceName = usbDevice.callObjectMethod("getDeviceName", "()Ljava/lang/String;").toString();
+        deviceList << deviceName;
+        qDebug() << "Serial Port found: " << deviceName;
     }
-    // 将端口名列表添加到下拉框中
-    ui->CmPortlist->addItems(deviceList);
-    // 默认情况下选择第一个端口
+
+    ui->CmPortlist->clear();  // 清除旧的列表项
+    ui->CmPortlist->addItems(deviceList);  // 添加新的端口列表
     if (!deviceList.isEmpty()) {
-        ui->CmPortlist->setCurrentIndex(0);
+        ui->CmPortlist->setCurrentIndex(0);  // 默认选择第一个端口
     }
-/*    QStringList portNameList;
-    QList<QSerialPortInfo> serialPortInfos = QSerialPortInfo::availablePorts();
-    ui->CmPortlist->clear();
-    // 遍历所有可用的串行端口信息
-    for (const QSerialPortInfo &info : serialPortInfos) {
-        portNameList.append(info.portName()); // 添加端口名到列表中
-    }
-    // 将端口名列表添加到下拉框中
-    ui->CmPortlist->addItems(portNameList);
-    // 默认情况下选择第一个端口
-    if (!portNameList.isEmpty()) {
-        ui->CmPortlist->setCurrentIndex(0);
-    }
-*/
 }
+
+
 
 //串口连接
 void PortWidgets::on_ptn_conn_clicked()
 {
-/*    // 从 UI 中获取当前选中的端口名并创建一个 Android JNI 字符串对象
-    QAndroidJniObject portName = QAndroidJniObject::fromString(ui->CmPortlist->currentText());
+    int portIndex = 0;
+    int baudRate = 9600; // 示例波特率
+    int dataBits = 8; // 示例数据位
+    int stopBits = 1; // 示例停止位
+    int parity = 0; // 示例校验位，无校验
 
-    // 静态调用 Java 端的方法。确保类名和方法签名正确
-    jboolean isSuccess = QAndroidJniObject::callStaticMethod<jboolean>(
-        "usb/USBListActivity",    // Java 类的完全限定名
-        "test",                   // 方法名
-        "(Ljava/lang/String;)Z",  // 方法签名，接受 String 返回 boolean
-        portName.object<jstring>() // 将 QAndroidJniObject 转换为 jstring
-        );
+    // 创建 Java 的 UsbController 对象
+    QAndroidJniObject javaUsbController = QAndroidJniObject("org/qtproject/example/UsbController",
+                                                            "(Landroid/content/Context;)V",
+                                                            QtAndroid::androidContext().object());
 
-    // 根据返回值输出结果
-    if (isSuccess) {
-        qDebug() << "Test succeeded";
-    } else {
-        qDebug() << "Test failed";
-    }
-*/
-//    myPort->setPortName(ui->CmPortlist->currentText());
+    // 获取所有串行端口的列表
+    QAndroidJniObject serialPorts = javaUsbController.callObjectMethod("getAllSerialPort", "()Ljava/util/List;");
+    QAndroidJniEnvironment env;
+    jobject listObject = serialPorts.object<jobject>();
 
-//    int baudindex = ui->CmbBaud->currentIndex();
-//    myPort->setBaudRate(baudRateMap[baudindex]);
+    // 获取特定索引的串行端口对象
+    jobject serialPortObject = env->CallObjectMethod(listObject, env->GetMethodID(env->GetObjectClass(listObject), "get", "(I)Ljava/lang/Object;"), portIndex);
 
-//    int dataindex = ui->CmbDataBits->currentIndex();
-//    myPort->setDataBits(dataMap[dataindex]);
-
-//    int stopindex = ui->CmbStopBits->currentIndex();
-//    myPort->setStopBits(stopMap[stopindex]);
-
-//    int checkindex = ui->CmbParity->currentIndex();
-//    myPort->setParity(parityMap[checkindex]);
-
-//    myPort->setFlowControl(QSerialPort::NoFlowControl);
-
-//    if (!myPort->isOpen())
-//    {
-//        myPort->open(QIODevice::ReadWrite);
-//        if (myPort->isOpen())
-//            qDebug() << "Connection success!";
-//        else
-//            qDebug() << "Connection failed!";
-//    }
-
+    // 调用 Java 中的 requestPermissionAndOpenPort 方法
+    javaUsbController.callMethod<void>("requestPermissionAndOpenPort",
+                                       "(Lcom/hoho/android/usbserial/driver/UsbSerialPort;IIII)V",
+                                       serialPortObject,
+                                       baudRate,
+                                       dataBits,
+                                       stopBits,
+                                       parity);
 }
+
 
 //接收来自串口的数据，发送到主串口
 void PortWidgets::receive_data()
