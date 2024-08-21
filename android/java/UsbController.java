@@ -138,24 +138,30 @@ public class UsbController implements SerialInputOutputManager.Listener {
 
     @Override
     public void onNewData(final byte[] data) {
-       try {
-           // 将接收到的数据转换为字符串并打印
-           String receivedData = new String(data, "UTF-8");
-           Log.d("USB", "Received data: " + receivedData);
-       } catch (UnsupportedEncodingException e) {
-           Log.e("USB", "UTF-8 encoding is not supported", e);
-       }
+        try {
+            // 将接收到的数据转换为字符串并打印
+            String receivedData = new String(data, "UTF-8");
+            Log.d("USB", "Received data: " + receivedData);
+        } catch (UnsupportedEncodingException e) {
+            Log.e("USB", "UTF-8 encoding is not supported", e);
+        }
 
-       // 如果设置了回调，也可以将数据传递给回调
-       if (onDataReceivedListener != null) {
-           onDataReceivedListener.onDataReceived(data);
-       }
-   }
+        // 通过 JNI 将数据传递到 C++
+        onDataReceivedFromJava(data);
+        // 如果设置了回调，也可以将数据传递给回调
 
-   @Override
-   public void onRunError(Exception e) {
-       Log.e("USB", "Error in SerialInputOutputManager: " + e.getMessage());
-   }
+        if (onDataReceivedListener != null) {
+            onDataReceivedListener.onDataReceived(data);
+        }
+    }
+
+    // 声明一个本地方法用于传递数据到 C++
+    public native void onDataReceivedFromJava(byte[] data);
+
+    @Override
+    public void onRunError(Exception e) {
+        Log.e("USB", "Error in SerialInputOutputManager: " + e.getMessage());
+    }
 
     public void closeSerialPort() {
         stopIoManager();

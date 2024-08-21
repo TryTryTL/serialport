@@ -136,7 +136,7 @@
   <widget class="QPushButton" name="ptn_conn">
    <property name="geometry">
     <rect>
-     <x>110</x>
+     <x>50</x>
      <y>270</y>
      <width>80</width>
      <height>23</height>
@@ -144,6 +144,19 @@
    </property>
    <property name="text">
     <string>连接</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>270</y>
+     <width>80</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>关闭页面</string>
    </property>
   </widget>
  </widget>

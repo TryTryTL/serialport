@@ -17,6 +17,10 @@ class PortWidgets : public QWidget
 public:
     explicit PortWidgets(QWidget *parent = nullptr);
     ~PortWidgets();
+    // 静态指针，用于访问当前实例
+    static PortWidgets *instance;
+    // JNI 方法，用于从 Java 接收数据
+    void onDataReceivedFromJava(const QByteArray &data);
 signals:
     void receivedata(QByteArray data);
 
@@ -25,6 +29,8 @@ private slots:
     void receive_data();
 
     void on_ptn_conn_clicked();
+
+    void on_pushButton_clicked();
 
 public:
     void write_data(QByteArray writedata);

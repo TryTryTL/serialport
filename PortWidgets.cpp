@@ -11,11 +11,13 @@
 #include <QAndroidJniObject>
 #include <QtAndroid>
 #endif
-
+PortWidgets* PortWidgets::instance = nullptr;
 PortWidgets::PortWidgets(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::PortWidgets)
 {
+    // 在构造函数中初始化静态实例指针
+    instance = this;
     ui->setupUi(this);
     this->setWindowTitle("PortWidgets");
     this->setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
@@ -53,7 +55,35 @@ PortWidgets::PortWidgets(QWidget *parent)
 
 PortWidgets::~PortWidgets()
 {
+    // 在析构函数中清除静态实例指针
+    instance = nullptr;
     delete ui;
+}
+
+// 生成的 JNI 方法名规则：Java_<包名>_<类名>_<方法名>
+// 包名中的 '.' 替换为 '_', 类名与方法名直接用下划线连接
+
+extern "C" JNIEXPORT void JNICALL
+Java_org_qtproject_example_UsbController_onDataReceivedFromJava(JNIEnv *env, jobject, jbyteArray data) {
+
+    // 将 jbyteArray 转换为 QByteArray
+    jsize length = env->GetArrayLength(data);
+    jbyte* byteArray = env->GetByteArrayElements(data, nullptr);
+    QByteArray receivedData((const char*)byteArray, length);
+
+    // 使用静态实例指针访问 PortWidgets 实例
+    if (PortWidgets::instance) {
+        PortWidgets::instance->onDataReceivedFromJava(receivedData);
+    }
+    qDebug() << "Received data from Java:" << receivedData;
+    env->ReleaseByteArrayElements(data, byteArray, 0);
+}
+
+void PortWidgets::onDataReceivedFromJava(const QByteArray &data)
+{
+    // 在这里处理从 Java 传回的串口数据
+    qDebug() << "Received data from Java:" << data;
+    emit receivedata(data);
 }
 
 void PortWidgets::on_ptn_refresh_clicked() {
@@ -132,5 +162,12 @@ void PortWidgets::receive_data()
 void PortWidgets::write_data(QByteArray writedata)
 {
     myPort->write(writedata);
+}
+
+
+void PortWidgets::on_pushButton_clicked()
+{
+    // 关闭窗口
+    this->close();
 }
 
