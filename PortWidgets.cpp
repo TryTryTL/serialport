@@ -75,14 +75,12 @@ Java_org_qtproject_example_UsbController_onDataReceivedFromJava(JNIEnv *env, job
     if (PortWidgets::instance) {
         PortWidgets::instance->onDataReceivedFromJava(receivedData);
     }
-    qDebug() << "Received data from Java:" << receivedData;
     env->ReleaseByteArrayElements(data, byteArray, 0);
 }
 
 void PortWidgets::onDataReceivedFromJava(const QByteArray &data)
 {
     // 在这里处理从 Java 传回的串口数据
-    qDebug() << "Received data from Java:" << data;
     emit receivedata(data);
 }
 
