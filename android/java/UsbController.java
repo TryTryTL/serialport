@@ -9,22 +9,38 @@ import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.util.Log;
-
+import java.io.UnsupportedEncodingException;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
 import com.hoho.android.usbserial.driver.UsbSerialProber;
+import com.hoho.android.usbserial.util.SerialInputOutputManager;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class UsbController {
+public class UsbController implements SerialInputOutputManager.Listener {
 
     private Context context;
     private UsbManager usbManager;
     private PendingIntent permissionIntent;
     private UsbSerialPort pendingUsbSerialPort; // 用于存储等待打开的串口
+    private SerialInputOutputManager mSerialIoManager;
+    private ExecutorService mExecutor = Executors.newSingleThreadExecutor();
+
+    // 数据接收回调接口
+    public interface OnDataReceivedListener {
+        void onDataReceived(byte[] data);
+    }
+
+    private OnDataReceivedListener onDataReceivedListener;
+
+    public void setOnDataReceivedListener(OnDataReceivedListener listener) {
+        this.onDataReceivedListener = listener;
+    }
 
     private final BroadcastReceiver usbPermissionReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
@@ -95,11 +111,62 @@ public class UsbController {
                 usbSerialPort.open(connection);
                 usbSerialPort.setParameters(baudRate, dataBits, stopBits, parity);
                 Log.d("USB", "Serial port opened successfully.");
+
+                // 启动 I/O 管理器
+                startIoManager(usbSerialPort);
             } catch (IOException e) {
                 Log.e("USB", "Error opening serial port: " + e.getMessage());
             }
         } else {
             Log.e("USB", "Could not open connection - permission might be required.");
+        }
+    }
+
+    private void startIoManager(UsbSerialPort usbSerialPort) {
+        if (usbSerialPort != null) {
+            mSerialIoManager = new SerialInputOutputManager(usbSerialPort, this);
+            mExecutor.submit(mSerialIoManager);
+        }
+    }
+
+    private void stopIoManager() {
+        if (mSerialIoManager != null) {
+            mSerialIoManager.stop();
+            mSerialIoManager = null;
+        }
+    }
+
+    @Override
+    public void onNewData(final byte[] data) {
+       try {
+           // 将接收到的数据转换为字符串并打印
+           String receivedData = new String(data, "UTF-8");
+           Log.d("USB", "Received data: " + receivedData);
+       } catch (UnsupportedEncodingException e) {
+           Log.e("USB", "UTF-8 encoding is not supported", e);
+       }
+
+       // 如果设置了回调，也可以将数据传递给回调
+       if (onDataReceivedListener != null) {
+           onDataReceivedListener.onDataReceived(data);
+       }
+   }
+
+   @Override
+   public void onRunError(Exception e) {
+       Log.e("USB", "Error in SerialInputOutputManager: " + e.getMessage());
+   }
+
+    public void closeSerialPort() {
+        stopIoManager();
+        if (pendingUsbSerialPort != null) {
+            try {
+                pendingUsbSerialPort.close();
+                Log.d("USB", "Serial port closed.");
+            } catch (IOException e) {
+                Log.e("USB", "Error closing serial port: " + e.getMessage());
+            }
+            pendingUsbSerialPort = null;
         }
     }
 }
