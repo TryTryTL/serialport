@@ -1,7 +1,6 @@
 QT += core gui
 QT += serialport
 QT += androidextras
-
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
@@ -39,4 +38,6 @@ DISTFILES += \
     android/gradlew \
     android/gradlew.bat \
     android/java/UsbController.java \
-    android/res/values/libs.xml
+    android/res/values/libs.xml \
+    android/src/com/hoho/android/usbserial/driver/*.java \
+    android/src/com/hoho/android/usbserial/util/*.java

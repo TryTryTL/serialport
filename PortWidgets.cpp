@@ -96,30 +96,49 @@ void PortWidgets::on_ptn_refresh_clicked()
 //串口连接
 void PortWidgets::on_ptn_conn_clicked()
 {
-    myPort->setPortName(ui->CmPortlist->currentText());
+/*    // 从 UI 中获取当前选中的端口名并创建一个 Android JNI 字符串对象
+    QAndroidJniObject portName = QAndroidJniObject::fromString(ui->CmPortlist->currentText());
 
-    int baudindex = ui->CmbBaud->currentIndex();
-    myPort->setBaudRate(baudRateMap[baudindex]);
+    // 静态调用 Java 端的方法。确保类名和方法签名正确
+    jboolean isSuccess = QAndroidJniObject::callStaticMethod<jboolean>(
+        "usb/USBListActivity",    // Java 类的完全限定名
+        "test",                   // 方法名
+        "(Ljava/lang/String;)Z",  // 方法签名，接受 String 返回 boolean
+        portName.object<jstring>() // 将 QAndroidJniObject 转换为 jstring
+        );
 
-    int dataindex = ui->CmbDataBits->currentIndex();
-    myPort->setDataBits(dataMap[dataindex]);
-
-    int stopindex = ui->CmbStopBits->currentIndex();
-    myPort->setStopBits(stopMap[stopindex]);
-
-    int checkindex = ui->CmbParity->currentIndex();
-    myPort->setParity(parityMap[checkindex]);
-
-    myPort->setFlowControl(QSerialPort::NoFlowControl);
-
-    if (!myPort->isOpen())
-    {
-        myPort->open(QIODevice::ReadWrite);
-        if (myPort->isOpen())
-            qDebug() << "Connection success!";
-        else
-            qDebug() << "Connection failed!";
+    // 根据返回值输出结果
+    if (isSuccess) {
+        qDebug() << "Test succeeded";
+    } else {
+        qDebug() << "Test failed";
     }
+*/
+//    myPort->setPortName(ui->CmPortlist->currentText());
+
+//    int baudindex = ui->CmbBaud->currentIndex();
+//    myPort->setBaudRate(baudRateMap[baudindex]);
+
+//    int dataindex = ui->CmbDataBits->currentIndex();
+//    myPort->setDataBits(dataMap[dataindex]);
+
+//    int stopindex = ui->CmbStopBits->currentIndex();
+//    myPort->setStopBits(stopMap[stopindex]);
+
+//    int checkindex = ui->CmbParity->currentIndex();
+//    myPort->setParity(parityMap[checkindex]);
+
+//    myPort->setFlowControl(QSerialPort::NoFlowControl);
+
+//    if (!myPort->isOpen())
+//    {
+//        myPort->open(QIODevice::ReadWrite);
+//        if (myPort->isOpen())
+//            qDebug() << "Connection success!";
+//        else
+//            qDebug() << "Connection failed!";
+//    }
+
 }
 
 //接收来自串口的数据，发送到主串口
